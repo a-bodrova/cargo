@@ -1,8 +1,8 @@
 // Hand-written today, same shape the future generator would produce — see
-// .claude/skills/generate-api. invalidateListAuctions also invalidates the
-// infinite-query cache entries: TanStack Query's default partial key
-// matching treats the extra `_infinite`/`body` fields on the infinite key
-// as a superset of this plain key, so one invalidator covers both.
+// .claude/skills/generate-api. Calling invalidateListAuctions() with no
+// options invalidates every cached list query regardless of filters:
+// TanStack Query's partial key matching only checks the properties we did
+// specify (just `_id`), so any `body` on the cached key still matches.
 import { getAuctionOptions, listAuctionsOptions, listBetsOptions } from '@/shared/api'
 import { invalidateQuery } from '@/shared/lib/wrappers'
 
