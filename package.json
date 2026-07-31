@@ -55,5 +55,10 @@
       "oxlint --fix",
       "vitest related --run"
     ]
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }
