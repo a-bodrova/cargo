@@ -1,11 +1,14 @@
+import { RouterProvider } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import '@/app/styles/index.css'
+import { enableMocking } from '@/app/mocks/enable-mocking'
+import { router } from '@/app/router'
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <div className="flex min-h-screen items-center justify-center text-slate-500">
-      cargo
-    </div>
-  </StrictMode>,
-)
+enableMocking().then(() => {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <RouterProvider router={router} />
+    </StrictMode>,
+  )
+})
