@@ -6,25 +6,6 @@ import { client } from '../client.gen';
 import { getAuction, listAuctions, listBets, type Options, setBet } from '../sdk.gen';
 import type { GetAuctionData, GetAuctionError, GetAuctionResponse, ListAuctionsData, ListAuctionsError, ListAuctionsResponse, ListBetsData, ListBetsError, ListBetsResponse, SetBetData, SetBetError } from '../types.gen';
 
-/**
- * Список аукционов
- *
- * Получение списка аукционов с заданными фильтрами
- */
-export const listAuctionsMutation = (options?: Partial<Options<ListAuctionsData>>): UseMutationOptions<ListAuctionsResponse, ListAuctionsError, Options<ListAuctionsData>> => {
-    const mutationOptions: UseMutationOptions<ListAuctionsResponse, ListAuctionsError, Options<ListAuctionsData>> = {
-        mutationFn: async (fnOptions) => {
-            const { data } = await listAuctions({
-                ...options,
-                ...fnOptions,
-                throwOnError: true
-            });
-            return data;
-        }
-    };
-    return mutationOptions;
-};
-
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
         _id: string;
@@ -56,6 +37,45 @@ const createQueryKey = <TOptions extends Options>(id: string, options?: TOptions
         params.query = options.query;
     }
     return [params];
+};
+
+export const listAuctionsQueryKey = (options?: Options<ListAuctionsData>) => createQueryKey('listAuctions', options);
+
+/**
+ * Список аукционов
+ *
+ * Получение списка аукционов с заданными фильтрами
+ */
+export const listAuctionsOptions = (options?: Options<ListAuctionsData>) => queryOptions<ListAuctionsResponse, ListAuctionsError, ListAuctionsResponse, ReturnType<typeof listAuctionsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listAuctions({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listAuctionsQueryKey(options)
+});
+
+/**
+ * Список аукционов
+ *
+ * Получение списка аукционов с заданными фильтрами
+ */
+export const listAuctionsMutation = (options?: Partial<Options<ListAuctionsData>>): UseMutationOptions<ListAuctionsResponse, ListAuctionsError, Options<ListAuctionsData>> => {
+    const mutationOptions: UseMutationOptions<ListAuctionsResponse, ListAuctionsError, Options<ListAuctionsData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await listAuctions({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
 };
 
 export const getAuctionQueryKey = (options: Options<GetAuctionData>) => createQueryKey('getAuction', options);
