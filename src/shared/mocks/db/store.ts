@@ -55,6 +55,7 @@ export function toListItem(db: DbAuction): AuctionListItem {
   const load = findRoutePoint(db, OperationType.LOADING)
   const unload = findRoutePoint(db, OperationType.UNLOADING)
   const { trading } = db
+  const hideAddressAndContacts = trading.hide_points_address_and_contacts
 
   return {
     main: {
@@ -78,10 +79,10 @@ export function toListItem(db: DbAuction): AuctionListItem {
     },
     route: {
       load: load
-        ? { city: load.location.city_name, address: load.location.loading_address, date: load.start_date, city_gc_id: load.location.city_gc_id, points_count: countRoutePoints(db, OperationType.LOADING) }
+        ? { city: load.location.city_name, address: hideAddressAndContacts ? undefined : load.location.loading_address, date: load.start_date, city_gc_id: load.location.city_gc_id, points_count: countRoutePoints(db, OperationType.LOADING) }
         : undefined,
       unload: unload
-        ? { city: unload.location.city_name, address: unload.location.loading_address, date: unload.start_date, city_gc_id: unload.location.city_gc_id, points_count: countRoutePoints(db, OperationType.UNLOADING) }
+        ? { city: unload.location.city_name, address: hideAddressAndContacts ? undefined : unload.location.loading_address, date: unload.start_date, city_gc_id: unload.location.city_gc_id, points_count: countRoutePoints(db, OperationType.UNLOADING) }
         : undefined,
     },
     cargo: {

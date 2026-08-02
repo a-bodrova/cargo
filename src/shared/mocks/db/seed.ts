@@ -53,14 +53,14 @@ const auction06 = createDbAuction({
   order_uid: uuid(6),
   cargo_num: '00000002006',
   auc_type: AuctionType.REQUEST,
-  trading: { status: AuctionStatus.PLANNING, can_set_bet: false },
+  trading: { status: AuctionStatus.PLANNING, can_set_bet: false, is_available: false },
 })
 
 // 7. Завершён, наш — победитель.
 const auction07 = createDbAuction({
   order_uid: uuid(7),
   cargo_num: '00000002007',
-  trading: { status: AuctionStatus.FINISHED, can_set_bet: false, is_bidder: true, status_mobile: TradingStatus.WINNER, your: { bet: true, last_bet: 28000, win: true } },
+  trading: { status: AuctionStatus.FINISHED, can_set_bet: false, is_available: false, is_bidder: true, status_mobile: TradingStatus.WINNER, your: { bet: true, last_bet: 28000, win: true } },
   bets: [bet({ auctionId: 1006, priceWithVat: 28000, priceNoVat: 22950, isWin: true, organizationName: 'ООО Перевозчик' })],
 })
 
@@ -68,7 +68,7 @@ const auction07 = createDbAuction({
 const auction08 = createDbAuction({
   order_uid: uuid(8),
   cargo_num: '00000002008',
-  trading: { status: AuctionStatus.FINISHED, can_set_bet: false, is_bidder: true, status_mobile: TradingStatus.LOSING, your: { bet: true, last_bet: 29000 } },
+  trading: { status: AuctionStatus.FINISHED, can_set_bet: false, is_available: false, is_bidder: true, status_mobile: TradingStatus.LOSING, your: { bet: true, last_bet: 29000 } },
   bets: [bet({ auctionId: 1007, priceWithVat: 27500, priceNoVat: 22541, isWin: true, organizationName: 'ООО Конкурент' })],
 })
 
@@ -90,7 +90,7 @@ const auction10 = createDbAuction({
 const auction11 = createDbAuction({
   order_uid: uuid(11),
   cargo_num: '00000002011',
-  trading: { status: AuctionStatus.AUCTION, can_set_bet: false },
+  trading: { status: AuctionStatus.AUCTION, can_set_bet: false, is_available: false },
 })
 
 // 12. История ставок скрыта.
@@ -128,7 +128,7 @@ const auction15 = createDbAuction({
 const auction16 = createDbAuction({
   order_uid: uuid(16),
   cargo_num: '00000002016',
-  trading: { status: AuctionStatus.FINISHED, can_set_bet: false },
+  trading: { status: AuctionStatus.FINISHED, can_set_bet: false, is_available: false },
   bets: [
     bet({ auctionId: 1015, priceWithVat: 27000, priceNoVat: 22131, isWin: true, organizationName: 'ООО Победитель' }),
     bet({ auctionId: 1015, priceWithVat: 27800, priceNoVat: 22787, isRejected: true, organizationName: 'ООО Отклонённый' }),
@@ -172,7 +172,41 @@ const auction18 = createDbAuction({
   trading: { status: AuctionStatus.AUCTION, can_set_bet: true, is_favorite: true },
 })
 
-const SEED: DbAuction[] = [auction01, auction02, auction03, auction04, auction05, auction06, auction07, auction08, auction09, auction10, auction11, auction12, auction13, auction14, auction15, auction16, auction17, auction18]
+// 19+. Filler auctions: pushes the total past one page (per_page=20) so pagination
+// is visible, and cycles every filterable dimension (city pair, auc_type, auction
+// status, my-status, availability/bidder, price, load date) so each FiltersPanel
+// option actually matches something.
+const AUC_TYPES = [AuctionType.REQUEST, AuctionType.UP, AuctionType.DOWN, AuctionType.FIX_PRICE]
+const AUCTION_STATUSES = [AuctionStatus.PLANNING, AuctionStatus.AUCTION, AuctionStatus.DETERMINATE_WINNER, AuctionStatus.WAIT_DEAL, AuctionStatus.IN_PROGRESS, AuctionStatus.FINISHED, AuctionStatus.STOPPED, AuctionStatus.CANCELED]
+const MY_STATUSES = [TradingStatus.NOT_PARTICIPATING, TradingStatus.LEADING, TradingStatus.LOSING, TradingStatus.ON_PENDING, TradingStatus.CONFIRMED, TradingStatus.CHOOSING_WINNER, TradingStatus.WINNER, TradingStatus.ACCEPTED]
+
+const filler = Array.from({ length: 26 }, (_, i) => {
+  const isAvailable = i % 2 === 0
+  const loadCity = CITIES[i % CITIES.length]!
+  const unloadCity = CITIES[(i + 5) % CITIES.length]!
+  const loadDate = new Date(Date.UTC(2026, 4, 1 + i * 3))
+  const loadDateIso = loadDate.toISOString().replace('.000Z', '')
+
+  return createDbAuction({
+    order_uid: uuid(19 + i),
+    cargo_num: String(2019 + i).padStart(11, '0'),
+    auc_type: AUC_TYPES[i % AUC_TYPES.length],
+    trading: {
+      status: AUCTION_STATUSES[i % AUCTION_STATUSES.length],
+      status_mobile: MY_STATUSES[i % MY_STATUSES.length],
+      is_available: isAvailable,
+      can_set_bet: isAvailable,
+      is_bidder: i % 3 === 0,
+      price: { current: 5000 + i * 2200, current_no_vat: Math.round((5000 + i * 2200) / 1.2) },
+    },
+    routes: [
+      routePoint({ row_num: 1, op_type: OperationType.LOADING, city: loadCity, address: 'Транспортная 9', start_date: loadDateIso, end_date: loadDateIso }),
+      routePoint({ row_num: 2, op_type: OperationType.UNLOADING, city: unloadCity, address: 'Складская 1', start_date: loadDateIso, end_date: loadDateIso }),
+    ],
+  })
+})
+
+const SEED: DbAuction[] = [auction01, auction02, auction03, auction04, auction05, auction06, auction07, auction08, auction09, auction10, auction11, auction12, auction13, auction14, auction15, auction16, auction17, auction18, ...filler]
 
 export function resetMockDb() {
   seedAuctions(SEED.map((a) => ({ ...a, bets: [...a.bets] })))
