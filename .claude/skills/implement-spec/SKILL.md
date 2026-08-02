@@ -1,6 +1,6 @@
 ---
 name: implement-spec
-description: Bootstrap implementation of one feature from its specs/<slug>.md — resolves the OpenAPI operations it references, points to the nearest existing FSD slice as a pattern reference, and seeds a task list, so a fresh session starts with exactly the context that feature needs and nothing carried over from unrelated prior work. Use as the first message of a new session when implementing a feature that already has a written, reviewed spec.
+description: Bootstrap implementation of one feature from its specs/<slug>.md — resolves the OpenAPI operations it references, points to the nearest existing FSD slice as a pattern reference, and seeds a task list, so a fresh session starts with exactly the context that feature needs and nothing carried over from unrelated prior work. Also handles change requests against an already-shipped feature: after write-spec revises the spec, re-running this checks the implementation against it and turns only the newly-failing bullets into tasks. Use as the first message of a new session when implementing or updating a feature that already has a written, reviewed spec.
 ---
 
 # implement-spec
@@ -20,7 +20,10 @@ Args: `<feature-slug>`
 2. Extract every `operationId`/schema name the spec references (its Acceptance Criteria and Edge Cases sections cross-reference them by design) and pull the matching fragments out of `openapi.auctions.v0.json` — quote them inline rather than telling the session to go read the whole file.
 3. Identify the nearest already-implemented sibling slice (same layer, adjacent domain — e.g. `auctions-list` for `auction-detail`) and name it as the pattern to match for query/mapping/UI conventions, instead of re-deriving conventions from scratch. If none exists yet (this is the first feature in its layer), say so explicitly instead of forcing a comparison — don't invent a pattern reference that isn't there.
 4. Check whether `src/pages/<feature-slug>/` (or the relevant widget/feature slice) already has implementation files:
-   - **Already implemented**: creating build tasks is nonsense — instead verify each Acceptance Criteria/Edge Case bullet against the actual code and report a checklist (pass/fail + file:line evidence). Flag any bullet that's satisfied only implicitly (e.g. by a type happening to omit a field) rather than by an explicit check tied to the condition the spec names — that's a finding to raise, not a pass. Skip steps 5-6 below in this case.
+   - **Already implemented**: creating build tasks for the whole spec is nonsense — instead verify each Acceptance Criteria/Edge Case bullet against the actual code and report a checklist (pass/fail + file:line evidence). Flag any bullet that's satisfied only implicitly (e.g. by a type happening to omit a field) rather than by an explicit check tied to the condition the spec names — that's a finding to raise, not a pass.
+     - **Every bullet passes**: done, say so, nothing to build.
+     - **Some bullets fail**: this is the normal shape of a `write-spec` revision landing on an already-built feature — don't just report it and stop. Create a `TaskCreate` list scoped to *only* the failing bullets (one task per failing bullet or tight group of related ones) and implement those, leaving passing behavior untouched. Skip step 5's estimate/decomposition machinery for this — a revision-sized gap is implicitly small; if it isn't (many bullets failing at once, effectively a rewrite), say so and fall back to step 5 as if this were a fresh implementation.
+     Skip steps 5-6 below except where step 4 sends you back to step 5.
    - **Not implemented yet**: continue to step 5.
 5. **Estimate the rough token cost of implementing this feature, capped at 150k.** Base the estimate on: number of Acceptance Criteria + Edge Case bullets in the spec, whether step 3 found a pattern-reference sibling (no sibling costs noticeably more — conventions have to be derived from scratch), whether new schema operations need `generate-api` wiring, and whether tests/browser verification are in scope. State the number and the reasoning behind it plainly — this is a heuristic, not a guarantee.
    - **≤150k**: proceed as a single pass — break the spec's Acceptance Criteria + Edge Cases into a `TaskCreate` list scoped to this feature, one task per bullet group (not per file), and implement directly in this session.
@@ -48,3 +51,8 @@ A hypothetical large feature estimating over the cap (e.g. a full order-manageme
 - pulls `listAuctions`/`getAuction` fragments
 - no sibling slice to point to — says so, doesn't invent one
 - `pages/auctions-list` already has implementation files → produces a pass/fail checklist against Acceptance Criteria/Edge Cases instead of build tasks, and flags any criterion satisfied only by accident (e.g. a field the type happens not to expose) rather than by an explicit check
+
+`implement-spec auctions-list` (after `write-spec auctions-list` added a sorting bullet) →
+
+- checklist: every pre-existing bullet still passes, the new sorting bullet fails (MSW handler ignores `AuctionListRequest.sort`, UI has no sort control)
+- creates one scoped task ("wire `sort` through the MSW handler and add a sort control to the UI") instead of re-listing the whole feature, implements just that

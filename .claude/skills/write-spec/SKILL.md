@@ -16,8 +16,14 @@ Args (in order, ask for whichever is missing): `<feature-slug> [related-schema-o
 
 ## Steps
 
-1. If `specs/<feature-slug>.md` already exists, stop and report — do not overwrite. Ask whether the user meant to revise it instead.
-2. If `src/pages/<feature-slug>/` (or the relevant widget/feature slice) already has implementation files, warn that writing the spec after the code inverts the SDD order this project follows — still write it if asked to, but say so plainly rather than silently going along with it.
+1. If `specs/<feature-slug>.md` already exists, this is a **revision**, not a fresh write — don't overwrite the whole file:
+   - Read the existing spec in full first.
+   - Ask what specifically is changing or being added, if that isn't already clear from context.
+   - Edit only the affected Acceptance Criteria/Edge Cases bullets (add/change/remove) — leave the rest of the file untouched. Regenerating the whole file erases the distinction between what's stable and what actually changed, and makes the diff unreviewable.
+   - State plainly, in the response, exactly which bullets changed — that list is what `implement-spec` (or a human) needs to know what to re-check against the existing implementation.
+2. If `src/pages/<feature-slug>/` (or the relevant widget/feature slice) already has implementation files:
+   - **Fresh spec, code already exists**: warn that writing the spec after the code inverts the SDD order this project follows — still write it if asked to, but say so plainly rather than silently going along with it.
+   - **Revision (step 1 above)**: this is the normal case, not a warning-worthy one — say so, and point to running `implement-spec <feature-slug>` next to reconcile the implementation against the changed bullets.
 3. Fill exactly these sections, no more, no less:
    - **Goal** — one or two sentences: what the feature does and why it exists (tie back to the assignment requirement it satisfies).
    - **Scope** — which route(s)/page(s) this covers.
@@ -35,3 +41,11 @@ Args (in order, ask for whichever is missing): `<feature-slug> [related-schema-o
 specs/place-bet.md
 ```
 with Goal/Scope/Acceptance Criteria/Edge Cases filled per the bet-form requirements, Acceptance Criteria referencing `SetBetRequest.price`, `trading.can_set_bet`, `trading.price.{min,max,step}`, and Edge Cases covering the Down/Up/FixPrice direction rules and 422 field-error mapping.
+
+`write-spec auctions-list` (spec and implementation already exist, user wants to add sorting) →
+
+- reads `specs/auctions-list.md` in full
+- confirms the change: add sorting by `AuctionListRequest.sort` (`start_time`/`price_per_km`/`current_price`, asc/desc)
+- adds one new Acceptance Criteria bullet referencing `AuctionListRequest.sort`, leaves every other bullet untouched
+- reports: "changed: added one Acceptance Criteria bullet for sorting; everything else in the file is unchanged"
+- points to running `implement-spec auctions-list` next

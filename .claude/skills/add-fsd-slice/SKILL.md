@@ -24,7 +24,7 @@ Args (in order, ask for whichever is missing): `<layer> <slice-name> [segments]`
 1. If `src/<layer>/<slice-name>/` already exists, stop and report — do not overwrite. Ask the user whether they meant to extend the existing slice instead.
 2. Create only the requested/inferred segment folders. Do not create empty placeholder folders for segments that have no content yet — a segment folder is created the moment its first file is written into it, not before.
 3. Write `index.ts` in the slice root re-exporting only the slice's public surface (the components/hooks/schemas other layers are meant to import) — never re-export internal helpers.
-4. Component files use standard `*.tsx` naming — never `*.component.tsx` (see AI_USAGE.md for why that suffix was rejected).
+4. Component files use kebab-case `*.tsx` naming (e.g. `auction-card.tsx`, exporting `AuctionCard`) — never PascalCase filenames, never `*.component.tsx` (see AI_USAGE.md for why that suffix was rejected).
 5. Print a one-line reminder of the FSD import rule before finishing: **a slice may only import from strictly lower layers (`app > pages > widgets > features > entities > shared`) plus `shared` — never sideways (entity → entity, feature → feature) and never upward.**
 
 ## Example
@@ -32,8 +32,8 @@ Args (in order, ask for whichever is missing): `<layer> <slice-name> [segments]`
 `add-fsd-slice entities bet` →
 ```
 src/entities/bet/
-  ui/BetRow.tsx
-  ui/BetStatusBadge.tsx
+  ui/bet-row.tsx
+  ui/bet-status-badge.tsx
   model/types.ts
   model/map-bet.ts
   api/queries.ts
