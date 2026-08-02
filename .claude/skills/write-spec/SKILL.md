@@ -24,6 +24,8 @@ Args (in order, ask for whichever is missing): `<feature-slug> [related-schema-o
    - **Acceptance Criteria** — a bullet list; every bullet must be checkable against a concrete schema field/enum (`openapi.auctions.v0.json`) or an explicit sentence from the assignment — no unfalsifiable criteria like "works well" or "is user-friendly."
    - **Edge Cases** — a bullet list naming the specific DTO flags/states that change behavior (e.g. `can_set_bet`, `hide_bets_history`, `hide_points_address_and_contacts`, `no_view_cargo_price`, empty/error/loading states, 422 responses) where relevant to this feature.
 4. Cross-reference the relevant `operationId`(s) and schema names inline so the spec stays traceable to the schema, not just to memory of a conversation.
+5. If this spec was written alongside others from the same intake batch, don't send it straight to implementation — point to `review-specs` first, to cross-check the batch for consistency before anything gets built. For a single standalone spec with no siblings, it's fine to skip straight to step 6.
+6. Once the spec (or the batch it's part of, via `review-specs`) is confirmed ready to build, tell the user to start a **new session** and run `implement-spec <feature-slug>` there — that skill turns this file into scoped implementation context instead of the feature being built inside whatever conversation happened to write the spec.
 
 ## Example
 

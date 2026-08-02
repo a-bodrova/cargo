@@ -1,38 +1,38 @@
-# Auctions List
+# Список аукционов
 
-## Goal
+## Цель
 
-Let a carrier browse and filter cargo auctions they can bid on, so they can find a relevant load without scanning the whole marketplace. Satisfies the assignment's "список аукционов" requirement.
+Дать перевозчику возможность просматривать и фильтровать грузовые аукционы, в которых он может участвовать, чтобы найти подходящий груз, не пролистывая весь маркетплейс. Закрывает требование задания «список аукционов».
 
-## Scope
+## Область
 
-- Route `/auctions` (`pages/auctions-list`).
-- Backed by `POST /auctions/list` (`operationId: listAuctions`).
+- Роут `/auctions` (`pages/auctions-list`).
+- Источник данных — `POST /auctions/list` (`operationId: listAuctions`).
 
-## Acceptance Criteria
+## Критерии приёмки
 
-- Data loads via TanStack Query against `listAuctions`; request body matches `AuctionListRequest` — `page`, `per_page` at minimum.
-- Pagination reflects `AuctionListResponseBase.meta` (`current_page`, `last_page`, `per_page`, `total`); page changes update `AuctionListRequest.page`.
-- Three distinct visual states: loading (skeleton), empty (`meta.total === 0`), error (query error, with a retry action).
-- Filters, all mapped 1:1 onto `AuctionListRequest` fields and synced to the URL search params:
-  - `cargo_num` (string)
-  - `status` (array, `TradingStatus` enum incl. list-only values `OnPending`/`ChoosingWinner`/`Accepted`) and/or `statuses` (numeric `AuctionStatus` codes)
-  - `auc_type` (array, `Request`/`Up`/`Down`/`FixPrice`)
-  - `load_city` / `unload_city` (string, drawn from the mock city dictionary — `shared/config/cities.ts`)
-  - `load_date_from` / `load_date_to` (date range)
-  - `is_available` (boolean)
-  - `is_bidder` (boolean)
-  - `current_price_from` / `current_price_to` (number range)
-- Search params are parsed and validated with a Zod schema; every field falls back to a safe default (`.catch()`) instead of throwing on a malformed URL.
-- Hovering/pointer-intent on a card prefetches that auction's detail query (`getAuction`) before the user clicks.
-- Layout adapts between desktop (filters panel) and mobile (filters drawer).
-- Each `AuctionListItem` card shows: `main.cargo_num`, `main.auc_type`, `trading.status`, `trading.status_mobile`, `route.load`→`route.unload`, load/unload dates, `cargo.{name,weight,volume,body_type}`, `trading.price.current`, `main.price_per_km`, `trading.your.bet` (has-my-bet flag), and a primary action derived from `trading.can_set_bet` × `trading.your.bet` × `trading.status_mobile` (Сделать ставку / Изменить ставку / Смотреть ставки / disabled).
+- Данные загружаются через TanStack Query поверх `listAuctions`; тело запроса соответствует `AuctionListRequest` — как минимум `page`, `per_page`.
+- Пагинация отражает `AuctionListResponseBase.meta` (`current_page`, `last_page`, `per_page`, `total`); смена страницы обновляет `AuctionListRequest.page`.
+- Три различных визуальных состояния: загрузка (skeleton), пусто (`meta.total === 0`), ошибка (ошибка запроса + действие «повторить»).
+- Фильтры, все отображаются 1:1 на поля `AuctionListRequest` и синхронизируются с URL search params:
+  - `cargo_num` (строка)
+  - `status` (массив, enum `TradingStatus`, включая значения только для списка — `OnPending`/`ChoosingWinner`/`Accepted`) и/или `statuses` (числовые коды `AuctionStatus`)
+  - `auc_type` (массив, `Request`/`Up`/`Down`/`FixPrice`)
+  - `load_city` / `unload_city` (строка, из мокового справочника городов — `shared/config/cities.ts`)
+  - `load_date_from` / `load_date_to` (диапазон дат)
+  - `is_available` (булево)
+  - `is_bidder` (булево)
+  - `current_price_from` / `current_price_to` (числовой диапазон)
+- Search params парсятся и валидируются Zod-схемой; для каждого поля есть безопасное значение по умолчанию (`.catch()`) — некорректный URL не должен приводить к падению.
+- Наведение/pointer-intent на карточку префетчит запрос детальной карточки этого аукциона (`getAuction`) до клика пользователя.
+- Раскладка адаптируется между десктопом (панель фильтров) и мобильной версией (drawer с фильтрами).
+- Каждая карточка `AuctionListItem` показывает: `main.cargo_num`, `main.auc_type`, `trading.status`, `trading.status_mobile`, `route.load`→`route.unload`, даты погрузки/выгрузки, `cargo.{name,weight,volume,body_type}`, `trading.price.current`, `main.price_per_km`, `trading.your.bet` (флаг наличия своей ставки), а также основное действие, определяемое комбинацией `trading.can_set_bet` × `trading.your.bet` × `trading.status_mobile` (Сделать ставку / Изменить ставку / Смотреть ставки / недоступно).
 
-## Edge Cases
+## Граничные случаи
 
-- `trading.can_set_bet === false` → primary action is disabled, not hidden.
-- `trading.hide_points_address_and_contacts === true` → card must not leak load/unload address beyond city name.
-- `trading.price` is `null` (e.g. `Request`-type auctions before pricing exists) → price block shows a neutral placeholder, not `0` or a crash.
-- `per_page` beyond the schema's practical range → clamp client-side before sending, per the search-params schema's fallback, not left to the mock to silently ignore.
-- Zero results for a valid filter combination → empty state, not an error state.
-- Malformed/garbage query string (e.g. `?page=abc&is_available=maybe`) → falls back to defaults, page still renders.
+- `trading.can_set_bet === false` → основное действие задизейблено, а не скрыто.
+- `trading.hide_points_address_and_contacts === true` → карточка не должна раскрывать адрес погрузки/выгрузки сверх названия города.
+- `trading.price === null` (например, аукционы типа `Request` до появления цены) → блок цены показывает нейтральную заглушку, а не `0` и не падает.
+- `per_page` за пределами практического диапазона схемы → обрезается на клиенте до отправки, согласно фолбэку схемы search params.
+- Ноль результатов при валидной комбинации фильтров → пустое состояние.
+- Некорректная/мусорная query-строка (например, `?page=abc&is_available=maybe`) → откат к значениям по умолчанию.
