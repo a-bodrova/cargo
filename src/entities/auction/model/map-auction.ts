@@ -16,6 +16,9 @@ export function mapAuctionToCard(dto: AuctionListItem): AuctionCardViewModel {
     route: {
       loadCity: route.load?.city ?? '—',
       unloadCity: route.unload?.city ?? '—',
+      // AuctionListItemRoute only ever carries one load + one unload point — intermediate
+      // stops aren't exposed here, just their count (see routes[] on the detail DTO for the full list).
+      totalStops: (route.load?.points_count ?? 0) + (route.unload?.points_count ?? 0),
     },
     loadDate: route.load?.date ?? null,
     unloadDate: route.unload?.date ?? null,

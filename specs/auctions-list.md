@@ -27,6 +27,7 @@
 - Наведение/pointer-intent на карточку префетчит запрос детальной карточки этого аукциона (`getAuction`) до клика пользователя.
 - Раскладка адаптируется между десктопом (панель фильтров) и мобильной версией (drawer с фильтрами).
 - Каждая карточка `AuctionListItem` показывает: `main.cargo_num`, `main.auc_type`, `trading.status`, `trading.status_mobile`, `route.load`→`route.unload`, даты погрузки/выгрузки, `cargo.{name,weight,volume,body_type}`, `trading.price.current`, `main.price_per_km`, `trading.your.bet` (флаг наличия своей ставки), а также основное действие, определяемое комбинацией `trading.can_set_bet` × `trading.your.bet` × `trading.status_mobile` (Сделать ставку / Изменить ставку / Смотреть ставки / недоступно).
+- `AuctionListItemRoute` даёт только `load`/`unload` (без промежуточных точек), но у каждого есть `points_count`. Карточка всегда показывает отметку с суммой `route.load.points_count + route.unload.points_count` (для наглядности — одинаковое место у всех карточек, не только когда точек больше двух), не разворачивая сами точки; полный список точек — только на детальной странице (`routes[]`).
 
 ## Граничные случаи
 

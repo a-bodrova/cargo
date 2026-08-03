@@ -2,7 +2,7 @@ import { AuctionStatus, AuctionType, OperationType, TradingStatus } from '@/shar
 import { CITIES } from '@/shared/config/cities'
 
 import { bet, createDbAuction, routePoint } from './factories'
-import { seedAuctions } from './store'
+import { recomputePlaces, seedAuctions } from './store'
 import type { DbAuction } from './types'
 
 const SPB = CITIES[2]!
@@ -172,7 +172,63 @@ const auction18 = createDbAuction({
   trading: { status: AuctionStatus.AUCTION, can_set_bet: true, is_favorite: true },
 })
 
-// 19+. Filler auctions: pushes the total past one page (per_page=20) so pagination
+// 19. Места в ставках скрыты (hide_places) — ставки настоящие (места
+// пересчитаны через recomputePlaces), а не null, иначе от скрытия было бы
+// не отличить обычное отсутствие данных.
+const auction19 = createDbAuction({
+  order_uid: uuid(19),
+  cargo_num: '00000002019',
+  trading: { status: AuctionStatus.AUCTION, can_set_bet: true, hide_places: true },
+  bets: [
+    bet({ auctionId: 1018, priceWithVat: 29500, priceNoVat: 24180, organizationName: 'ООО Лидер' }),
+    bet({ auctionId: 1018, priceWithVat: 29000, priceNoVat: 23770, organizationName: 'ООО Второй' }),
+  ],
+})
+recomputePlaces(auction19)
+
+// 20. Маршрут с промежуточной точкой — 3 точки вместо обычных 2 (погрузка,
+// промежуточная частичная выгрузка, финальная выгрузка). routes[] — обычный
+// массив без ограничения на пару load/unload.
+const auction20 = createDbAuction({
+  order_uid: uuid(20),
+  cargo_num: '00000002020',
+  trading: { status: AuctionStatus.AUCTION, can_set_bet: true },
+  routes: [
+    routePoint({ row_num: 1, op_type: OperationType.LOADING, city: CITIES[0]!, address: 'Транспортная 9', start_date: '2026-05-26T09:00:00', end_date: '2026-05-26T18:00:00' }),
+    routePoint({ row_num: 2, op_type: OperationType.UNLOADING, city: CITIES[1]!, address: 'Промежуточная 5', start_date: '2026-05-27T09:00:00', end_date: '2026-05-27T14:00:00' }),
+    routePoint({ row_num: 3, op_type: OperationType.UNLOADING, city: SPB, address: 'Складская 1', start_date: '2026-05-28T09:00:00', end_date: '2026-05-28T18:00:00' }),
+  ],
+})
+
+// 21-29. Маршруты с 2..10 точками — систематическая проверка, что RoutesCard
+// рендерит произвольную длину routes[], а не только пару load/unload.
+// Чередование Loading/Unloading, последняя точка всегда Unloading.
+const routePointCounts = Array.from({ length: 9 }, (_, i) => {
+  const pointCount = i + 2
+  const routes = Array.from({ length: pointCount }, (_, p) => {
+    const isLast = p === pointCount - 1
+    const pointDate = new Date(Date.UTC(2026, 4, 26 + p))
+    const pointDateIso = pointDate.toISOString().replace('.000Z', '')
+
+    return routePoint({
+      row_num: p + 1,
+      op_type: isLast || p % 2 === 1 ? OperationType.UNLOADING : OperationType.LOADING,
+      city: CITIES[p % CITIES.length]!,
+      address: `Точка ${p + 1}`,
+      start_date: pointDateIso,
+      end_date: pointDateIso,
+    })
+  })
+
+  return createDbAuction({
+    order_uid: uuid(21 + i),
+    cargo_num: String(2021 + i).padStart(11, '0'),
+    trading: { status: AuctionStatus.AUCTION, can_set_bet: true },
+    routes,
+  })
+})
+
+// 30+. Filler auctions: pushes the total past one page (per_page=20) so pagination
 // is visible, and cycles every filterable dimension (city pair, auc_type, auction
 // status, my-status, availability/bidder, price, load date) so each FiltersPanel
 // option actually matches something.
@@ -188,8 +244,8 @@ const filler = Array.from({ length: 26 }, (_, i) => {
   const loadDateIso = loadDate.toISOString().replace('.000Z', '')
 
   return createDbAuction({
-    order_uid: uuid(19 + i),
-    cargo_num: String(2019 + i).padStart(11, '0'),
+    order_uid: uuid(30 + i),
+    cargo_num: String(2030 + i).padStart(11, '0'),
     auc_type: AUC_TYPES[i % AUC_TYPES.length],
     trading: {
       status: AUCTION_STATUSES[i % AUCTION_STATUSES.length],
@@ -206,7 +262,7 @@ const filler = Array.from({ length: 26 }, (_, i) => {
   })
 })
 
-const SEED: DbAuction[] = [auction01, auction02, auction03, auction04, auction05, auction06, auction07, auction08, auction09, auction10, auction11, auction12, auction13, auction14, auction15, auction16, auction17, auction18, ...filler]
+const SEED: DbAuction[] = [auction01, auction02, auction03, auction04, auction05, auction06, auction07, auction08, auction09, auction10, auction11, auction12, auction13, auction14, auction15, auction16, auction17, auction18, auction19, auction20, ...routePointCounts, ...filler]
 
 export function resetMockDb() {
   seedAuctions(SEED.map((a) => ({ ...a, bets: [...a.bets] })))

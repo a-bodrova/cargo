@@ -1,3 +1,5 @@
+import type { AuctionShowResponse } from '@/shared/api'
+
 import type { ListAuctionTrading, PrimaryAction } from './types'
 
 /**
@@ -13,4 +15,16 @@ export function getPrimaryAction(trading: ListAuctionTrading): PrimaryAction {
   }
 
   return trading.can_set_bet ? { kind: 'place-bet', label: 'Сделать ставку' } : { kind: 'disabled', label: 'Ставка недоступна' }
+}
+
+export type DetailAuctionTrading = NonNullable<AuctionShowResponse['trading']>
+
+/**
+ * Detail page's CTA collapses the list's 4-state action to 3 — the bets
+ * history is already on this page, so there's no separate 'view-bets' state;
+ * can_set_bet===false is just disabled regardless of your.bet.
+ */
+export function getDetailPrimaryAction(trading: DetailAuctionTrading): PrimaryAction {
+  if (!trading.can_set_bet) return { kind: 'disabled', label: 'Ставка недоступна' }
+  return trading.your?.bet === true ? { kind: 'change-bet', label: 'Изменить ставку' } : { kind: 'place-bet', label: 'Сделать ставку' }
 }
