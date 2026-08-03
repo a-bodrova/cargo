@@ -1,6 +1,6 @@
-import { OperationType, TradingStatus, type AuctionListItem, type AuctionShowResponse } from '@/shared/api'
+import { TradingStatus, type AuctionListItem, type AuctionShowResponse } from '@/shared/api'
 
-import type { DbAuction, DbRoutePoint } from './types'
+import type { DbAuction } from './types'
 
 const auctions = new Map<string, DbAuction>()
 
@@ -27,10 +27,6 @@ export function recomputePlaces(db: DbAuction) {
   })
 }
 
-function findRoutePoint(db: DbAuction, opType: string): DbRoutePoint | undefined {
-  return db.routes.find((point) => point.op_type === opType)
-}
-
 function countRoutePoints(db: DbAuction, opType: string): number {
   return db.routes.filter((point) => point.op_type === opType).length
 }
@@ -52,8 +48,11 @@ function narrowListStatusMobile(statusMobile: DbAuction['trading']['status_mobil
 }
 
 export function toListItem(db: DbAuction): AuctionListItem {
-  const load = findRoutePoint(db, OperationType.LOADING)
-  const unload = findRoutePoint(db, OperationType.UNLOADING)
+  // Route summary card wants the route's start and end, not "the first point of each
+  // type" — with 3+ points those can differ (e.g. Loading, Unloading, Unloading would
+  // otherwise surface the middle stop as "unload" instead of the actual last one).
+  const load = db.routes[0]
+  const unload = db.routes[db.routes.length - 1]
   const { trading } = db
   const hideAddressAndContacts = trading.hide_points_address_and_contacts
 
@@ -79,10 +78,10 @@ export function toListItem(db: DbAuction): AuctionListItem {
     },
     route: {
       load: load
-        ? { city: load.location.city_name, address: hideAddressAndContacts ? undefined : load.location.loading_address, date: load.start_date, city_gc_id: load.location.city_gc_id, points_count: countRoutePoints(db, OperationType.LOADING) }
+        ? { city: load.location.city_name, address: hideAddressAndContacts ? undefined : load.location.loading_address, date: load.start_date, city_gc_id: load.location.city_gc_id, points_count: countRoutePoints(db, load.op_type) }
         : undefined,
       unload: unload
-        ? { city: unload.location.city_name, address: hideAddressAndContacts ? undefined : unload.location.loading_address, date: unload.start_date, city_gc_id: unload.location.city_gc_id, points_count: countRoutePoints(db, OperationType.UNLOADING) }
+        ? { city: unload.location.city_name, address: hideAddressAndContacts ? undefined : unload.location.loading_address, date: unload.start_date, city_gc_id: unload.location.city_gc_id, points_count: countRoutePoints(db, unload.op_type) }
         : undefined,
     },
     cargo: {
