@@ -1,24 +1,18 @@
 import { Link } from '@tanstack/react-router'
-import type { ReactNode } from 'react'
 
-import { AUC_TYPE_LABEL, AuctionStatusBadge, AuctionTradingStatusBadge, getDetailPrimaryAction, useAuctionDetail, type AuctionDetailData } from '@/entities/auction'
-import { BidMeasurementType, OperationType, PaymentDelayType } from '@/shared/api'
+import { AuctionPriceCard, AuctionSummary, getDetailPrimaryAction, useAuctionDetail, type AuctionDetailData } from '@/entities/auction'
+import { OperationType, PaymentDelayType } from '@/shared/api'
 import { formatCurrency } from '@/shared/lib/format-currency'
 import { formatDate } from '@/shared/lib/format-date'
 import { Badge } from '@/shared/ui/kit/badge'
 import { Button } from '@/shared/ui/kit/button'
 import { Card, CardContent, CardHeader } from '@/shared/ui/kit/card'
+import { Field } from '@/shared/ui/kit/field'
 
 import { AuctionBetsHistory } from './auction-bets-history'
 import { AuctionDetailErrorState } from './auction-detail-error-state'
 import { AuctionDetailNotFound } from './auction-detail-not-found'
 import { AuctionDetailSkeleton } from './auction-detail-skeleton'
-
-const BID_MEASUREMENT_LABEL: Record<(typeof BidMeasurementType)[keyof typeof BidMeasurementType], string> = {
-  [BidMeasurementType.PER_ROUTE]: 'за рейс',
-  [BidMeasurementType.PER_KM]: 'за км',
-  [BidMeasurementType.UNKNOWN]: '',
-}
 
 const PAYMENT_DELAY_LABEL: Record<(typeof PaymentDelayType)[keyof typeof PaymentDelayType], string> = {
   [PaymentDelayType.CALENDAR_DAYS]: 'календарных дней',
@@ -53,7 +47,7 @@ export function AuctionDetailWidget({ auctionUuid }: { auctionUuid: string }) {
   return (
     <div className="mx-auto max-w-4xl space-y-4 px-4 py-6">
       <HeaderCard data={data} />
-      <PriceCard trading={data.trading} />
+      <AuctionPriceCard trading={data.trading} />
       <CargoCard cargo={data.cargo} hidePrice={data.trading.no_view_cargo_price} />
       <RoutesCard routes={data.routes} hideAddressAndContacts={data.trading.hide_points_address_and_contacts} />
       <OrganizerCard organizer={data.organizer} contacts={data.contacts} />
@@ -65,15 +59,6 @@ export function AuctionDetailWidget({ auctionUuid }: { auctionUuid: string }) {
   )
 }
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div>
-      <div className="text-xs text-slate-400">{label}</div>
-      <div>{children}</div>
-    </div>
-  )
-}
-
 function HeaderCard({ data }: { data: AuctionDetailData }) {
   const primaryAction = getDetailPrimaryAction(data.trading)
   const isDisabled = primaryAction.kind === 'disabled'
@@ -81,17 +66,7 @@ function HeaderCard({ data }: { data: AuctionDetailData }) {
   return (
     <Card>
       <CardHeader>
-        <div>
-          <div className="text-sm font-medium text-slate-900">№ {data.main.cargo_num}</div>
-          <div className="mt-1 flex flex-wrap gap-1.5">
-            <Badge variant="neutral">{AUC_TYPE_LABEL[data.main.auc_type]}</Badge>
-            <AuctionStatusBadge status={data.trading.status} />
-            <AuctionTradingStatusBadge status={data.trading.status_mobile} />
-          </div>
-          <div className="mt-2 text-xs text-slate-500">
-            Торги: {formatDate(data.trading.start_time)} — {formatDate(data.trading.stop_time)}
-          </div>
-        </div>
+        <AuctionSummary main={data.main} trading={data.trading} />
         <Button disabled={isDisabled} asChild={!isDisabled}>
           {isDisabled ? primaryAction.label : (
             <Link to="/auctions/$auctionUuid/bid" params={{ auctionUuid: data.main.order_uid }}>
@@ -100,26 +75,6 @@ function HeaderCard({ data }: { data: AuctionDetailData }) {
           )}
         </Button>
       </CardHeader>
-    </Card>
-  )
-}
-
-function PriceCard({ trading }: { trading: AuctionDetailData['trading'] }) {
-  const unit = BID_MEASUREMENT_LABEL[trading.bid_measurement_type]
-  const { current, min, max, step, price_per_km } = trading.price
-
-  return (
-    <Card>
-      <CardContent>
-        <h2 className="text-sm font-semibold text-slate-900">Цена</h2>
-        <div className="mt-2 text-2xl font-semibold text-slate-900">{current == null ? 'Цена не определена' : `${formatCurrency(current)} ${unit}`.trim()}</div>
-        <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-slate-700 sm:grid-cols-4">
-          <Field label="Мин.">{formatCurrency(min)}</Field>
-          <Field label="Макс.">{formatCurrency(max)}</Field>
-          <Field label="Шаг">{formatCurrency(step)}</Field>
-          <Field label="За км">{formatCurrency(price_per_km)}</Field>
-        </div>
-      </CardContent>
     </Card>
   )
 }
