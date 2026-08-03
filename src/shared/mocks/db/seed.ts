@@ -22,7 +22,7 @@ const auction02 = createDbAuction({
   order_uid: uuid(2),
   cargo_num: '00000002002',
   trading: { status: AuctionStatus.AUCTION, can_set_bet: true, status_mobile: TradingStatus.LEADING, is_bidder: true, your: { bet: true, last_bet: 29500 } },
-  bets: [bet({ auctionId: 1000, priceWithVat: 29500, priceNoVat: 24180, organizationName: 'ООО Перевозчик', isWin: false })],
+  bets: [bet({ auctionId: 1001, priceWithVat: 29500, priceNoVat: 24180, organizationName: 'ООО Перевозчик', isWin: false })],
 })
 
 // 3. Своя ставка есть, но перебита — Losing.
@@ -30,6 +30,10 @@ const auction03 = createDbAuction({
   order_uid: uuid(3),
   cargo_num: '00000002003',
   trading: { status: AuctionStatus.AUCTION, can_set_bet: true, status_mobile: TradingStatus.LOSING, is_bidder: true, your: { bet: true, last_bet: 29800 } },
+  bets: [
+    bet({ auctionId: 1002, priceWithVat: 29600, priceNoVat: 24666.67, organizationName: 'ООО Лидер' }),
+    bet({ auctionId: 1002, priceWithVat: 29800, priceNoVat: 24833.33, organizationName: 'ООО Перевозчик' }),
+  ],
 })
 
 // 4. Аукцион на повышение (Up).
@@ -69,14 +73,23 @@ const auction08 = createDbAuction({
   order_uid: uuid(8),
   cargo_num: '00000002008',
   trading: { status: AuctionStatus.FINISHED, can_set_bet: false, is_available: false, is_bidder: true, status_mobile: TradingStatus.LOSING, your: { bet: true, last_bet: 29000 } },
-  bets: [bet({ auctionId: 1007, priceWithVat: 27500, priceNoVat: 22541, isWin: true, organizationName: 'ООО Конкурент' })],
+  bets: [
+    bet({ auctionId: 1007, priceWithVat: 27500, priceNoVat: 22541, isWin: true, organizationName: 'ООО Конкурент' }),
+    bet({ auctionId: 1007, priceWithVat: 29000, priceNoVat: 24166.67, organizationName: 'ООО Перевозчик' }),
+  ],
 })
 
 // 9. Планирование, ставка недоступна и аукцион недоступен.
 const auction09 = createDbAuction({
   order_uid: uuid(9),
   cargo_num: '00000002009',
-  trading: { status: AuctionStatus.PLANNING, can_set_bet: false, is_available: false, price: { start: null, current: null, current_no_vat: null, available: null, available_no_vat: null, min: null, min_no_vat: null, max: null, max_no_vat: null, step: null, step_no_vat: null } },
+  trading: {
+    status: AuctionStatus.PLANNING,
+    can_set_bet: false,
+    is_available: false,
+    price: { start: null, current: null, current_no_vat: null, available: null, available_no_vat: null, min: null, min_no_vat: null, max: null, max_no_vat: null, step: null, step_no_vat: null },
+    price_per_km: 0,
+  },
 })
 
 // 10. Отменён.
@@ -98,7 +111,7 @@ const auction12 = createDbAuction({
   order_uid: uuid(12),
   cargo_num: '00000002012',
   trading: { status: AuctionStatus.AUCTION, can_set_bet: true, hide_bets_history: true },
-  bets: [bet({ auctionId: 1011, priceWithVat: 29000, priceNoVat: 23770 })],
+  bets: [bet({ auctionId: 1011, priceWithVat: 29000, priceNoVat: 23770, organizationName: 'ООО Сторонний' })],
 })
 
 // 13. Адрес и контакты скрыты.
@@ -237,7 +250,11 @@ const AUCTION_STATUSES = [AuctionStatus.PLANNING, AuctionStatus.AUCTION, Auction
 const MY_STATUSES = [TradingStatus.NOT_PARTICIPATING, TradingStatus.LEADING, TradingStatus.LOSING, TradingStatus.ON_PENDING, TradingStatus.CONFIRMED, TradingStatus.CHOOSING_WINNER, TradingStatus.WINNER, TradingStatus.ACCEPTED]
 
 const filler = Array.from({ length: 26 }, (_, i) => {
-  const isAvailable = i % 2 === 0
+  // Betting only ever opens up during active trading, same as every hand-authored auction
+  // above (01-20) — deriving can_set_bet/is_available from an independent i%2 cycle let a
+  // filler row land on e.g. `DeterminateWinner` + can_set_bet:true, which can't happen for real.
+  const status = AUCTION_STATUSES[i % AUCTION_STATUSES.length]
+  const canBid = status === AuctionStatus.AUCTION
   const loadCity = CITIES[i % CITIES.length]!
   const unloadCity = CITIES[(i + 5) % CITIES.length]!
   const loadDate = new Date(Date.UTC(2026, 4, 1 + i * 3))
@@ -248,10 +265,10 @@ const filler = Array.from({ length: 26 }, (_, i) => {
     cargo_num: String(2030 + i).padStart(11, '0'),
     auc_type: AUC_TYPES[i % AUC_TYPES.length],
     trading: {
-      status: AUCTION_STATUSES[i % AUCTION_STATUSES.length],
+      status,
       status_mobile: MY_STATUSES[i % MY_STATUSES.length],
-      is_available: isAvailable,
-      can_set_bet: isAvailable,
+      is_available: canBid,
+      can_set_bet: canBid,
       is_bidder: i % 3 === 0,
       price: { current: 5000 + i * 2200, current_no_vat: Math.round((5000 + i * 2200) / 1.2) },
     },
