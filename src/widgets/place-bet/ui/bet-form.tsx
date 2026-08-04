@@ -66,6 +66,10 @@ export function BetForm({ auctionUuid, aucType, trading, onNotFound }: BetFormPr
 
   const unit = BID_MEASUREMENT_LABEL[trading.bid_measurement_type]
   const title = getDetailPrimaryAction(trading).label
+  const hints = [
+    price.available != null && `доступная цена ${price.available}`,
+    price.step != null && `шаг ${price.step}`,
+  ].filter(Boolean)
 
   return (
     <Card>
@@ -75,6 +79,7 @@ export function BetForm({ auctionUuid, aucType, trading, onNotFound }: BetFormPr
           <label className="flex flex-col gap-1 text-sm">
             <span className="text-slate-700">{`Ваша ставка ${unit}`.trim()}</span>
             <Input type="number" min={price.min ?? undefined} max={price.max ?? undefined} step={price.step ?? undefined} {...register('price', { valueAsNumber: true })} />
+            {hints.length > 0 && <span className="text-xs text-slate-500">{hints.join(', ')}</span>}
             {errors.price && <span className="text-xs text-red-600">{errors.price.message}</span>}
           </label>
 

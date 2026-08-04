@@ -16,7 +16,7 @@
 - Три визуальных состояния для `getAuction`: загрузка (skeleton), ошибка (404 — «аукцион не найден» со ссылкой на `/auctions`, прочие — сообщение + «повторить»), успех. Форма рендерится только в успешном состоянии.
 - При `trading.can_set_bet === false` форма не рендерится вообще (не задизейбленная форма, а её отсутствие) — вместо неё сообщение о недоступности ставки и ссылка назад на `/auctions/$auctionUuid`.
 - Единственное поле формы соответствует `SetBetRequest.price`; подпись меняется по `trading.bid_measurement_type` (`PerRoute` → «за рейс», `PerKm` → «за км»), как в `PriceCard` детальной страницы (`widgets/auction-detail/ui/auction-detail-widget.tsx`).
-- Поле — нативный `<input type="number">` с атрибутами `min`/`max`/`step`, выставленными из `trading.price.{min,max,step}` там, где они не `null`.
+- Поле — нативный `<input type="number">` с атрибутами `min`/`max`/`step`, выставленными из `trading.price.{min,max,step}` там, где они не `null`. Под полем — текстовая подсказка с `trading.price.available` и `trading.price.step` (там, где они не `null`), т.к. атрибуты `min`/`max`/`step` сами по себе не видны пользователю до попытки невалидного ввода.
 - При `trading.your.bet === true` поле предзаполняется значением `trading.your.last_bet`; иначе поле пустое.
 - Клиентская Zod-схема (RHF + `@hookform/resolvers`) требует `price > 0` до отправки.
 - Клиентская проверка направления цены по `main.auc_type`, зеркалящая серверную (`shared/mocks/handlers/auctions.bets.ts::validateBet`), выполняется там, где нужные поля цены не `null`:

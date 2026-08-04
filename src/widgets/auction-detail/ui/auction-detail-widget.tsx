@@ -54,7 +54,16 @@ export function AuctionDetailWidget({ auctionUuid }: { auctionUuid: string }) {
       <PaymentCard payment={data.payment} />
       <AdmittedOrganizationsCard organizations={data.admitted_organizations} />
       {hasAssembly && <AssemblyCard assembly={data.assembly} />}
-      {!auction.hideBetsHistory && <AuctionBetsHistory auctionUuid={auctionUuid} hidePlaces={data.trading.hide_places} />}
+      {auction.hideBetsHistory ? (
+        <Card>
+          <CardContent>
+            <h2 className="text-sm font-semibold text-slate-900">История ставок</h2>
+            <p className="mt-2 text-sm text-slate-500">История ставок скрыта организатором</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <AuctionBetsHistory auctionUuid={auctionUuid} hidePlaces={data.trading.hide_places} />
+      )}
     </div>
   )
 }

@@ -1,32 +1,53 @@
-# React + TypeScript + Vite
+# Грузовые аукционы — SPA
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Список аукционов, детальная карточка, история ставок, установка ставки — по OpenAPI-схеме `openapi.auctions.v0.json`. Бэкенда нет — все запросы обслуживает MSW поверх in-memory стора (`src/shared/mocks`), который реально меняет состояние после мутаций (ставка обновляет текущую цену, торговый статус и список ставок).
 
-Currently, two official plugins are available:
+**Демо:** [cargo-pet.netlify.app](https://cargo-pet.netlify.app).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Стек
 
-## React Compiler
+React + TypeScript + Vite, TanStack Router (file-based) + TanStack Query, React Hook Form + Zod, MSW, Zustand (точечный UI-state — панель фильтров), Feature-Sliced Design.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Запуск
 
-## Expanding the Oxlint configuration
+Требуется Node.js 22+.
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm ci
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Приложение поднимется на `http://localhost:5173` и сразу откроет `/auctions` — все данные из MSW-моков, ничего дополнительно настраивать не нужно.
+
+Прочие команды:
+
+```bash
+npm run lint        # oxlint
+npm run typecheck    # tsc -b --noEmit
+npm run test         # vitest run
+npm run build        # tsc -b && vite build
+npm run preview      # локальный просмотр production-сборки (MSW работает и там)
+```
+
+`npm run build && npm run preview` — тоже рабочий путь проверки: `VITE_ENABLE_MSW` по умолчанию `true`, так что моки поднимаются и в собранном виде (см. `src/shared/config/env.ts`).
+
+CI (`.github/workflows/ci.yml`) на каждый push/PR в `main` гоняет `lint → typecheck → test → build`.
+
+## Как проверялось
+
+- Автоматически: `lint`, `typecheck`, `test` (26 тестов, 5 файлов — search params, request builder, `ViewModel`-мапперы, схема ставки, MSW-стор), `build` — все зелёные.
+- Вручную через `npm run dev`, по каждому пункту ТЗ:
+  - Список: пагинация (3 страницы при `per_page=20`), skeleton при первой загрузке, все обязательные фильтры (`cargo_num`, `status`, `statuses`, `auc_type`, `load_city`/`unload_city`, диапазон дат погрузки, `is_available`, `is_bidder`, диапазон цены) читаются и пишутся в URL search params, мусорная query-строка не роняет страницу (Zod `.catch()`), prefetch детальной карточки по hover на карточке, мобильная раскладка (drawer с фильтрами) на 375px.
+  - Детальная карточка: все блоки из ТЗ (организатор, контакты, маршрут по точкам, груз, требования к ТС, условия оплаты, параметры торгов, цена — включая доступную/мин/макс/шаг), 404 на несуществующий `auctionUuid`, `hide_bets_history` (оба места в схеме) даёт заглушку вместо истории, а не пустоту.
+  - Ставки: список, цена с НДС/без НДС, перевозчик, место в рейтинге, победитель/отменённая/причина отмены, переключатель «показать отменённые», участники считаются как число уникальных `organization_id` (в схеме отдельного поля для этого нет).
+  - Форма ставки: недоступна при `can_set_bet: false` (сообщение + ссылка назад, а не задизейбленная форма), клиентская валидация направления цены (Down/Up/FixPrice/Request) зеркалит серверную, подсказка по доступной цене и шагу под полем, 422 раскладывается по полям через `setError`, успех — тост + инвалидация `list`/`detail`/`bets` + переход на детальную карточку с уже обновлённой ценой и историей.
+- Осознанно не проверялось: кросс-браузерность (только Chromium-движок), нагрузочные сценарии (список не виртуализирован — при разумном `per_page` не требовалось), доступность сверх базовой семантики форм/лейблов (отдельного aXe-прогона не было).
+
+## Ограничения
+
+- Список городов — фиксированный мок-словарь на 13 городов (`src/shared/config/cities.ts`), не поиск по бэкенду.
+- Сортировка списка (`AuctionListRequest.sort`) не реализована — не входила в обязательный минимум ТЗ.
+- Полный набор фильтров схемы (диапазоны веса/объёма, `body_types`, `customer`/`contractor` и т.д.) не реализован — только обязательный минимум из ТЗ.
+- MSW-стор — in-memory: состояние (в т.ч. поставленные ставки) сбрасывается на полной перезагрузке страницы.
+
+Подробности решений, что было предложено ИИ и отклонено, и что осталось бы улучшить — в [AI_USAGE.md](AI_USAGE.md).

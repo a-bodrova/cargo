@@ -9,12 +9,16 @@ import { AuctionDetailErrorState } from './auction-detail-error-state'
 export function AuctionBetsHistory({ auctionUuid, hidePlaces }: { auctionUuid: string; hidePlaces: boolean }) {
   const [showCancelled, setShowCancelled] = useState(false)
   const bets = useAuctionBets(auctionUuid, showCancelled)
+  const participantCount = new Set(bets.items.map((bet) => bet.organization_id)).size
 
   return (
     <Card>
       <CardContent>
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-900">История ставок</h2>
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">История ставок</h2>
+            {!bets.isPending && !bets.isError && <p className="text-xs text-slate-500">Участников: {participantCount}</p>}
+          </div>
           <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
             <input type="checkbox" checked={showCancelled} onChange={(e) => setShowCancelled(e.target.checked)} />
             Показать отменённые

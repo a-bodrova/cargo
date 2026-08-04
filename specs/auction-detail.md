@@ -21,13 +21,13 @@
 - Блок организатора показывает `organizer.organization_name`, `organizer.organization_inn` и контакты из `contacts[]` (`name`, `phone`, `email`).
 - Блок оплаты показывает `payment.{form, condition, delay, delay_type, prepay}`.
 - Блок допущенных к торгам организаций перечисляет `admitted_organizations[]` (`name`, `inn`, `is_main`).
-- История ставок загружается через `listBets` без `all` (по умолчанию только активные) и рендерит по каждому элементу `BetItem`: `contact_name`, `organization_name`, `price_with_vat`/`price_no_vat`, `created_at`, `place`, бейджи `is_win`/`is_counter`.
+- История ставок загружается через `listBets` без `all` (по умолчанию только активные) и рендерит по каждому элементу `BetItem`: `contact_name`, `organization_name`, `price_with_vat`/`price_no_vat`, `created_at`, `place`, бейджи `is_win`/`is_counter`. Схема не даёт отдельного поля с числом участников — счётчик «Участников: N» считается на клиенте как количество уникальных `organization_id` среди загруженных ставок.
 - Переключатель «показать отменённые» перезапрашивает `listBets` с `all: true` и дополнительно показывает записи с непустым `cancel_reason` и/или `is_rejected === true`, визуально помеченные как отменённые/отклонённые.
 - Три визуальных состояния для истории ставок, независимые от состояния `getAuction`: загрузка, пусто (`bets.length === 0` — «ставок пока нет»), ошибка + «повторить».
 
 ## Граничные случаи
 
-- `hide_bets_history` существует в схеме дважды — на корне `AuctionShowResponse` и на `trading.hide_bets_history`. Если хотя бы одно из двух `=== true`, блок истории ставок не рендерится вообще, и запрос `listBets` не выполняется.
+- `hide_bets_history` существует в схеме дважды — на корне `AuctionShowResponse` и на `trading.hide_bets_history`. Если хотя бы одно из двух `=== true`, вместо истории показывается заглушка «История ставок скрыта организатором», и запрос `listBets` не выполняется.
 - `trading.hide_places === true` → поле `place` скрыто в каждой строке истории ставок.
 - `trading.no_view_cargo_price === true` → `cargo.price` не отображается.
 - `trading.hide_points_address_and_contacts === true` → `routes[].location.loading_address` и `routes[].contact.{name, phone}` не показываются сверх названия города.
